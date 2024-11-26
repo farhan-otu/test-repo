@@ -46,13 +46,18 @@ describe("Realm settings general tab tests", () => {
 
     // Enable realm
     realmSettingsPage.toggleSwitch(`${realmName}-switch`);
-    masthead.checkNotificationMessage("Realm successfully updated", true);
-    realmSettingsPage.assertSwitch(`${realmName}-switch`, true);
+    masthead.checkNotificationMessage("Realm successfully updated");
+    sidebarPage.waitForPageLoad();
 
     // Disable realm
     realmSettingsPage.toggleSwitch(`${realmName}-switch`, false);
     realmSettingsPage.disableRealm();
     masthead.checkNotificationMessage("Realm successfully updated", true);
+    sidebarPage.waitForPageLoad();
+
+    // Re-enable realm
+    realmSettingsPage.toggleSwitch(`${realmName}-switch`);
+    masthead.checkNotificationMessage("Realm successfully updated");
   });
 
   it("Fail to set Realm ID to empty", () => {

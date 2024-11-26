@@ -1,5 +1,6 @@
 import type EventRepresentation from "@keycloak/keycloak-admin-client/lib/defs/eventRepresentation";
 import type EventType from "@keycloak/keycloak-admin-client/lib/defs/eventTypes";
+import type { RealmEventsConfigRepresentation } from "@keycloak/keycloak-admin-client/lib/defs/realmEventsConfigRepresentation";
 import {
   KeycloakDataTable,
   KeycloakSelect,
@@ -38,7 +39,6 @@ import DropdownPanel from "../components/dropdown-panel/DropdownPanel";
 import { useRealm } from "../context/realm-context/RealmContext";
 import { toUser } from "../user/routes/User";
 import useFormatDate, { FORMAT_DATE_AND_TIME } from "../utils/useFormatDate";
-import useLocaleSort from "../utils/useLocaleSort";
 
 import "./events.css";
 
@@ -120,13 +120,12 @@ export const UserEvents = ({ user, client }: UserEventsProps) => {
   const { adminClient } = useAdminClient();
 
   const { t } = useTranslation();
-  const localeSort = useLocaleSort();
   const { realm } = useRealm();
   const formatDate = useFormatDate();
   const [key, setKey] = useState(0);
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [selectOpen, setSelectOpen] = useState(false);
-  const [events, setEvents] = useState<string[]>();
+  const [events, setEvents] = useState<RealmEventsConfigRepresentation>();
   const [activeFilters, setActiveFilters] = useState<
     Partial<UserEventSearchForm>
   >({});
@@ -164,17 +163,16 @@ export const UserEvents = ({ user, client }: UserEventsProps) => {
 
   useFetch(
     () => adminClient.realms.getConfigEvents({ realm }),
-    (events) =>
-      setEvents(localeSort(events?.enabledEventTypes || [], (e) => e)),
+    (events) => setEvents(events),
     [],
   );
 
   function loader(first?: number, max?: number) {
     return adminClient.realms.findEvents({
-      client,
-      user,
       // The admin client wants 'dateFrom' and 'dateTo' to be Date objects, however it cannot actually handle them so we need to cast to any.
       ...(activeFilters as any),
+      client,
+      user,
       realm,
       first,
       max,
@@ -218,14 +216,6 @@ export const UserEvents = ({ user, client }: UserEventsProps) => {
       getValues(),
       (value) => value !== "" || (Array.isArray(value) && value.length > 0),
     );
-
-    if (user) {
-      delete newFilters.user;
-    }
-
-    if (client) {
-      delete newFilters.client;
-    }
 
     setActiveFilters(newFilters);
     setKey(key + 1);
@@ -311,7 +301,7 @@ export const UserEvents = ({ user, client }: UserEventsProps) => {
                           </ChipGroup>
                         }
                       >
-                        {events?.map((option) => (
+                        {events?.enabledEventTypes?.map((option) => (
                           <SelectOption key={option} value={option}>
                             {t(`eventTypes.${option}.name`)}
                           </SelectOption>
@@ -403,7 +393,6 @@ export const UserEvents = ({ user, client }: UserEventsProps) => {
                       key={key}
                       categoryName={filterLabels[key]}
                       onClick={() => removeFilter(key)}
-                      isClosable
                     >
                       {typeof value === "string" ? (
                         <Chip isReadOnly>{value}</Chip>
